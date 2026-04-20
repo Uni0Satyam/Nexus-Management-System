@@ -14,7 +14,7 @@ const contentSchema = new Schema(
     type: {
       type: String,
     },
-    groupId: {
+    group: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group",
       default: null,
@@ -23,4 +23,4 @@ const contentSchema = new Schema(
   { timestamps: true },
 );
 
-module.exports = mongoose.model("Content", contentSchema);
+export const Content = mongoose.model("Content", contentSchema);

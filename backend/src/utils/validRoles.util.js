@@ -1,6 +1,6 @@
-import { ApiError } from "./errorHandler.util";
+import { ApiError } from "./errorHandler.util.js";
 
-const validRole = (...roles) => {
+const validRoles = (...roles) => {
     return (req, res, next) => {
         if (!roles.includes(req.user.role)){
             throw new ApiError(403, "Access denied!")
@@ -9,4 +9,4 @@ const validRole = (...roles) => {
     }
 }
 
-export {validRole};
+export {validRoles};

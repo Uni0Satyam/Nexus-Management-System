@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/errorHandler.js";
+import { asyncHandler } from "./asyncHandler.util.js";
+import { ApiError } from "./errorHandler.util.js";
 import { User } from "../models/user.model.js";
 
 const isLoggedIn = asyncHandler(async (req, _, next) => {

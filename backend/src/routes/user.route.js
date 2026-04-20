@@ -21,4 +21,4 @@ router.route("/:id/group").patch(validRoles("admin"), assignUser);
 
 router.route("/:id").delete(validRoles("admin"), deleteUser);
 
-module.exports = router;
+export default router;

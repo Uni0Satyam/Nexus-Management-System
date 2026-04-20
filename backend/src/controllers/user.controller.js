@@ -16,9 +16,9 @@ const createUser = asyncHandler(async (req, res) => {
   let { name, email, password, role, group } = req.body;
 
   const user = await User.findOne({ email });
-  if (user) return new ApiError(409, "User already registered");
+  if (user) throw new ApiError(409, "User already registered");
 
-  await user.create({
+  await User.create({
     name,
     email,
     password,
@@ -35,17 +35,17 @@ const assignUser = asyncHandler(async (req, res) => {
 
   if (groupId) {
     const group = await Group.findById(groupId);
-    if (!group) return new ApiError(404, "Group not found!");
+    if (!group) throw new ApiError(404, "Group not found!");
   }
 
   let user = await User.findByIdAndUpdate(
     id,
     {
-      groupId: groupId || null,
+      group: groupId || null,
     },
     { new: true },
-  ).populate("groupId");
-  if (!user) return new ApiError(404, "User not found!");
+  ).populate("group");
+  if (!user) throw new ApiError(404, "User not found!");
 
   return res
     .status(200)
@@ -56,7 +56,7 @@ const deleteUser = asyncHandler(async (req, res, next) => {
   let { id } = req.params;
 
   const user = await User.findByIdAndDelete(id);
-  if (!user) return new ApiError(404, "User not found!");
+  if (!user) throw new ApiError(404, "User not found!");
 
   return res
     .status(200)

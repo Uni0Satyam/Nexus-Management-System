@@ -19,4 +19,4 @@ router
   .put(validRoles("admin"), updateGroup)
   .delete(validRoles("admin"), deleteGroup);
 
-module.exports = router;
+export default router;

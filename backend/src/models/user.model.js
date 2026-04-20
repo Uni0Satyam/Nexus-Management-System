@@ -27,12 +27,11 @@ const userSchema = new Schema(
       enum: ["admin", "user"],
       default: "user",
     },
-    groupId: {
+    group: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Group",
       default: null,
     },
-    refreshToken: String,
   },
   { timestamps: true },
 );
@@ -43,11 +42,11 @@ userSchema.pre("save", async function () {
   this.password = await bcrypt.hash(this.password, 12);
 });
 
-userSchema.methods.isPasswordCorrect = async (password) => {
+userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-userSchema.methods.generateAccessToken = () => {
+userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
       _id: this._id,
@@ -55,20 +54,8 @@ userSchema.methods.generateAccessToken = () => {
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,
-    },
+    }
   );
 };
 
-userSchema.methods.generateRefreshToken = () => {
-  return jwt.sign(
-    {
-      _id: this._id,
-    },
-    process.env.REFRESH_TOKEN_SECRET,
-    {
-      expiresIn: process.env.REFRESH_TOKEN_SECRET,
-    },
-  );
-};
-
-module.export = mongoose.model("User", userSchema);
+export const User = mongoose.model("User", userSchema);

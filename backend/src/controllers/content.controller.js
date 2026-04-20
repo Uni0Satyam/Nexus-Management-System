@@ -1,5 +1,5 @@
-import Content from "../models/content.model.js";
-import Group from "../models/group.model.js";
+import { Content } from "../models/content.model.js";
+import { Group } from "../models/group.model.js";
 import { asyncHandler } from "../utils/asyncHandler.util.js";
 import { ApiError } from "../utils/errorHandler.util.js";
 import { ApiResponse } from "../utils/responseHandler.util.js";
@@ -10,10 +10,10 @@ const getContent = asyncHandler(async (req, res) => {
   const filter =
     user?.role === "admin"
       ? {}
-      : { $or: [{ groupId: null }, { groupId: user.groupId }] };
+      : { $or: [{ group: null }, { group: user.group }] };
 
   const content = await Content.find(filter)
-    .populate("groupId")
+    .populate("group")
     .sort({ createdAt: -1 });
 
   return res
@@ -22,24 +22,25 @@ const getContent = asyncHandler(async (req, res) => {
 });
 
 const createContent = asyncHandler(async (req, res) => {
-  let { title, body, type, groupId } = req.body;
+  const { title, body, type, groupId } = req.body;
 
   if (groupId) {
     const group = await Group.findById(groupId);
-    if (!group) return new ApiError(200, "Group not found");
+    if (!group) throw new ApiError(404, "Group not found");
   }
 
   const content = await Content.create({
     title,
     body,
     type: type || "text",
-    groupId: groupId || null,
+    group: groupId || null,
   });
-  content = await content.populate("groupId");
+  
+  const populatedContent = await content.populate("group");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, { content }, "Content created"));
+    .json(new ApiResponse(200, { content: populatedContent }, "Content created"));
 });
 
 const updateContent = asyncHandler(async (req, res, next) => {
@@ -52,12 +53,12 @@ const updateContent = asyncHandler(async (req, res, next) => {
       ...(title && { title }),
       ...(body && { body }),
       ...(type && { type }),
-      ...(groupId !== undefined && { groupId }),
+      ...(groupId !== undefined && { group: groupId }),
     },
     { new: true, runValidators: true },
-  ).populate("groupId");
+  ).populate("group");
 
-  if (!content) return new ApiError(409, "Content not found");
+  if (!content) throw new ApiError(409, "Content not found");
 
   return res
     .status(200)
@@ -68,7 +69,7 @@ const deleteContent = asyncHandler(async (req, res, next) => {
   let id = req.params.id;
   const content = await Content.findByIdAndDelete(id);
 
-  if (!content) return new ApiError(409, "Content not found");
+  if (!content) throw new ApiError(409, "Content not found");
   return res
     .status(200)
     .json(new ApiResponse(200, {}, "Content deleted successfully"));

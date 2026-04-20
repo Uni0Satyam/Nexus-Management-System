@@ -11,14 +11,24 @@ const groupSchema = new Schema(
     description: {
       type: String,
     },
-    members: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
   },
-  { timestamps: true },
+  { 
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+  },
 );
 
-module.export = mongoose.model("Group", groupSchema);
+groupSchema.virtual("members", {
+    ref: "User",
+    localField: "_id",
+    foreignField: "group",
+});
+
+groupSchema.virtual("contents", {
+    ref: "Content",
+    localField: "_id",
+    foreignField: "group",
+});
+
+export const Group = mongoose.model("Group", groupSchema);

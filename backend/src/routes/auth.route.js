@@ -2,7 +2,6 @@ import {
   registerUser,
   loginUser,
   logoutUser,
-  refreshAccessToken,
   getUserProfile,
 } from "../controllers/auth.controller.js";
 import { Router } from "express";
@@ -14,9 +13,7 @@ router.route("/signUp").post(registerUser);
 
 router.route("/login").post(loginUser);
 
-router.route("/logout").get(isLoggedIn, loginUser);
-
-router.route("/refresh-token").get(isLoggedIn, refreshAccessToken);
+router.route("/logout").get(isLoggedIn, logoutUser);
 
 router.route("/profile").get(isLoggedIn, getUserProfile);
 
