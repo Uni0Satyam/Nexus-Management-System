@@ -3,9 +3,12 @@ import { ApiError } from "../utils/errorHandler.util.js";
 import { ApiResponse } from "../utils/responseHandler.util.js";
 import { User } from "../models/user.model.js";
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const cookiesOptions = {
   httpOnly: true,
-  secure: false,
+  secure: isProduction,
+  sameSite: isProduction ? 'none' : 'lax',
 };
 
 const getUserAccessToken = async (userId) => {
