@@ -5,8 +5,9 @@ import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
-import { FileText, Plus, X, Calendar, Link as LinkIcon } from 'lucide-react';
+import { FileText, Plus, X, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { contentSchema, validateForm } from '../lib/validation';
 
 const ContentPage = () => {
   const { user } = useAuth();
@@ -15,6 +16,7 @@ const ContentPage = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ title: '', body: '', type: 'text', groupId: '' });
+  const [errors, setErrors] = useState({});
   const [editingId, setEditingId] = useState(null);
 
   const fetchData = async () => {
@@ -38,13 +40,16 @@ const ContentPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.body.trim()) {
-      return toast.error('Title and Body are required');
+    const fieldErrors = validateForm(contentSchema, formData);
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      return;
     }
+    setErrors({});
 
     const payload = { ...formData, groupId: formData.groupId || null };
-    const promise = editingId 
-      ? api.put(`/content/${editingId}`, payload) 
+    const promise = editingId
+      ? api.put(`/content/${editingId}`, payload)
       : api.post('/content', payload);
 
     toast.promise(promise, {
@@ -75,6 +80,18 @@ const ContentPage = () => {
     }
   };
 
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setFormData({ title: '', body: '', type: 'text', groupId: '' });
+    setErrors({});
+    setEditingId(null);
+  };
+
+  const handleFieldChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-4">
@@ -82,7 +99,7 @@ const ContentPage = () => {
             {user?.role === 'admin' ? 'Content library' : 'My Content'}
         </h1>
         {user?.role === 'admin' && (
-          <Button onClick={() => setShowModal(true)} variant="outline" className="flex items-center space-x-2">
+          <Button onClick={() => { setErrors({}); setShowModal(true); }} variant="outline" className="flex items-center space-x-2">
             <Plus size={20} />
             <span>Add content</span>
           </Button>
@@ -139,29 +156,33 @@ const ContentPage = () => {
               <h2 className="text-2xl font-bold text-white tracking-tight">
                 {editingId ? 'Edit Content' : 'New Library Item'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-500 hover:text-white transition-colors">
+              <button onClick={handleCloseModal} className="text-gray-500 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
               <Input
                 label="Title"
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => handleFieldChange('title', e.target.value)}
                 placeholder="e.g. Employee Handbook"
-                required
+                error={errors.title}
               />
               <div className="flex flex-col space-y-2">
                 <label className="text-sm font-bold text-gray-400 uppercase tracking-wider">Content Body / Link</label>
                 <textarea
-                  className="px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl text-gray-200 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all min-h-[120px] text-sm"
+                  className={`px-4 py-3 bg-gray-900 border rounded-xl text-gray-200 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all min-h-[120px] text-sm ${
+                    errors.body ? 'border-rose-500 focus:ring-rose-500' : 'border-gray-700'
+                  }`}
                   value={formData.body}
-                  onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                  onChange={(e) => handleFieldChange('body', e.target.value)}
                   placeholder="Paste text or a URL here..."
-                  required
                 />
+                {errors.body && (
+                  <span className="text-xs text-rose-500">{errors.body}</span>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col space-y-2">
@@ -169,7 +190,7 @@ const ContentPage = () => {
                     <select
                         className="px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         value={formData.type}
-                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        onChange={(e) => handleFieldChange('type', e.target.value)}
                     >
                         <option value="text">Text</option>
                         <option value="link">Link</option>
@@ -181,7 +202,7 @@ const ContentPage = () => {
                     <select
                         className="px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         value={formData.groupId}
-                        onChange={(e) => setFormData({ ...formData, groupId: e.target.value })}
+                        onChange={(e) => handleFieldChange('groupId', e.target.value)}
                     >
                         <option value="">Public</option>
                         {groups.map(g => <option key={g._id} value={g._id}>{g.groupName}</option>)}
@@ -189,7 +210,7 @@ const ContentPage = () => {
                 </div>
               </div>
               <div className="flex space-x-4 pt-4">
-                <Button variant="ghost" className="flex-1" onClick={() => setShowModal(false)}>Cancel</Button>
+                <Button variant="ghost" className="flex-1" onClick={handleCloseModal}>Cancel</Button>
                 <Button type="submit" variant="primary" className="flex-1 bg-blue-600 hover:bg-blue-700">
                   {editingId ? 'Save Changes' : 'Add to Library'}
                 </Button>

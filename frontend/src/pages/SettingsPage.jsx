@@ -7,6 +7,7 @@ import Button from '../components/common/Button';
 import Input from '../components/common/Input';
 import { Shield, Users, Plus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { addUserSchema, validateForm } from '../lib/validation';
 
 const SettingsPage = () => {
   const { user: currentUser } = useAuth();
@@ -14,12 +15,13 @@ const SettingsPage = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
-  
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  
+
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'user' });
+  const [addUserErrors, setAddUserErrors] = useState({});
 
   const fetchData = async () => {
     try {
@@ -42,6 +44,12 @@ const SettingsPage = () => {
 
   const handleAddUser = async (e) => {
     e.preventDefault();
+    const fieldErrors = validateForm(addUserSchema, newUser);
+    if (Object.keys(fieldErrors).length > 0) {
+      setAddUserErrors(fieldErrors);
+      return;
+    }
+    setAddUserErrors({});
     try {
       await api.post('/user', newUser);
       toast.success('User added successfully');
@@ -65,6 +73,17 @@ const SettingsPage = () => {
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const handleFieldChange = (field, value) => {
+    setNewUser((prev) => ({ ...prev, [field]: value }));
+    setAddUserErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    setNewUser({ name: '', email: '', password: '', role: 'user' });
+    setAddUserErrors({});
   };
 
   return (
@@ -105,9 +124,9 @@ const SettingsPage = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-white tracking-tight">All users</h2>
-            <Button 
-                onClick={() => setShowAddModal(true)} 
-                variant="outline" 
+            <Button
+                onClick={() => setShowAddModal(true)}
+                variant="outline"
                 className="flex items-center space-x-2 px-4"
             >
               <Plus size={18} />
@@ -152,8 +171,8 @@ const SettingsPage = () => {
                         )}
                       </td>
                       <td className="px-8 py-6 text-right">
-                        <Button 
-                            variant="outline" 
+                        <Button
+                            variant="outline"
                             className="bg-gray-800/20 border-white/10 hover:border-white/20 text-xs py-2 px-5 !rounded-lg"
                             onClick={() => { setSelectedUser(u); setShowAssignModal(true); }}
                         >
@@ -174,47 +193,53 @@ const SettingsPage = () => {
           <Card className="w-full max-w-md p-8 space-y-8 shadow-2xl">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white tracking-tight">Add New User</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-500 hover:text-white transition-colors">
+              <button onClick={handleCloseAddModal} className="text-gray-500 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
-            <form onSubmit={handleAddUser} className="space-y-6">
+            <form onSubmit={handleAddUser} className="space-y-6" noValidate>
               <Input
                 label="Full Name"
+                id="newUser-name"
                 placeholder="Jane Smith"
                 value={newUser.name}
-                onChange={(e) => setNewUser({...newUser, name: e.target.value})}
-                required
+                onChange={(e) => handleFieldChange('name', e.target.value)}
+                error={addUserErrors.name}
               />
               <Input
                 label="Email Address"
+                id="newUser-email"
                 type="email"
                 placeholder="jane@organization.com"
                 value={newUser.email}
-                onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                required
+                onChange={(e) => handleFieldChange('email', e.target.value)}
+                error={addUserErrors.email}
               />
               <Input
                 label="Password"
+                id="newUser-password"
                 type="password"
                 placeholder="••••••••"
                 value={newUser.password}
-                onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                required
+                onChange={(e) => handleFieldChange('password', e.target.value)}
+                error={addUserErrors.password}
               />
               <div className="flex flex-col space-y-1.5">
                 <label className="text-sm font-medium text-gray-400">Role</label>
-                <select 
+                <select
                     className="px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-white"
                     value={newUser.role}
-                    onChange={(e) => setNewUser({...newUser, role: e.target.value})}
+                    onChange={(e) => handleFieldChange('role', e.target.value)}
                 >
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                 </select>
+                {addUserErrors.role && (
+                  <span className="text-xs text-rose-500 mt-1">{addUserErrors.role}</span>
+                )}
               </div>
               <div className="flex space-x-4 pt-4">
-                <Button variant="ghost" className="flex-1" onClick={() => setShowAddModal(false)}>Cancel</Button>
+                <Button variant="ghost" className="flex-1" onClick={handleCloseAddModal}>Cancel</Button>
                 <Button type="submit" variant="primary" className="flex-1 bg-blue-600 hover:bg-blue-700">Create User</Button>
               </div>
             </form>
@@ -230,7 +255,7 @@ const SettingsPage = () => {
                 <p className="text-gray-400">Assigning group for <span className="text-white font-medium">{selectedUser.name}</span></p>
             </div>
             <div className="space-y-4">
-                <select 
+                <select
                     className="w-full px-4 py-3 bg-gray-900 border border-gray-700 rounded-xl text-white focus:ring-2 focus:ring-blue-500"
                     onChange={(e) => handleAssignGroup(selectedUser._id, e.target.value)}
                     value={selectedUser.group?._id || ''}

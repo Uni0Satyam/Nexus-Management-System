@@ -4,10 +4,12 @@ import { useAuth } from '../context/AuthContext';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { Mail, Lock } from 'lucide-react';
+import { loginSchema, validateForm } from '../lib/validation';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const { login } = useAuth();
@@ -15,6 +17,12 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const fieldErrors = validateForm(loginSchema, { email, password });
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     try {
       await login(email, password);
@@ -33,16 +41,15 @@ const LoginPage = () => {
           <p className="text-slate-500 dark:text-slate-400 mt-2">Welcome back to MiniMS</p>
         </div>
 
-
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <Input
             label="Email Address"
             type="email"
             id="email"
             placeholder="john@example.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+            onChange={(e) => { setEmail(e.target.value); setErrors((prev) => ({ ...prev, email: undefined })); }}
+            error={errors.email}
             icon={<Mail size={18} />}
           />
           <Input
@@ -51,8 +58,8 @@ const LoginPage = () => {
             id="password"
             placeholder="••••••••"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
+            onChange={(e) => { setPassword(e.target.value); setErrors((prev) => ({ ...prev, password: undefined })); }}
+            error={errors.password}
             icon={<Lock size={18} />}
           />
 

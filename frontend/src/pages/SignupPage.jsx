@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Input from '../components/common/Input';
 import Button from '../components/common/Button';
 import { User, Mail, Lock } from 'lucide-react';
+import { signupSchema, validateForm } from '../lib/validation';
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -11,17 +12,26 @@ const SignupPage = () => {
     email: '',
     password: '',
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  
+
   const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+    setErrors((prev) => ({ ...prev, [id]: undefined }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const fieldErrors = validateForm(signupSchema, formData);
+    if (Object.keys(fieldErrors).length > 0) {
+      setErrors(fieldErrors);
+      return;
+    }
+    setErrors({});
     setLoading(true);
     try {
       await signup(formData);
@@ -40,8 +50,7 @@ const SignupPage = () => {
           <p className="text-slate-500 dark:text-slate-400 mt-2">Join MiniMS today</p>
         </div>
 
-
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <Input
             label="Full Name"
             type="text"
@@ -49,7 +58,7 @@ const SignupPage = () => {
             placeholder="John Doe"
             value={formData.name}
             onChange={handleChange}
-            required
+            error={errors.name}
             icon={<User size={18} />}
           />
           <Input
@@ -59,7 +68,7 @@ const SignupPage = () => {
             placeholder="john@example.com"
             value={formData.email}
             onChange={handleChange}
-            required
+            error={errors.email}
             icon={<Mail size={18} />}
           />
           <Input
@@ -69,8 +78,7 @@ const SignupPage = () => {
             placeholder="••••••••"
             value={formData.password}
             onChange={handleChange}
-            required
-            min={8}
+            error={errors.password}
             icon={<Lock size={18} />}
           />
 
